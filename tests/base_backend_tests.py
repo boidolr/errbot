@@ -15,7 +15,7 @@ from queue import Queue, Empty  # noqa
 from errbot.errBot import ErrBot
 from errbot.backends.base import Message, Room, Identifier, ONLINE
 from errbot.backends.test import TestPerson, TestOccupant, TestRoom, ShallowConfig
-from errbot import botcmd, re_botcmd, arg_botcmd, templating  # noqa
+from errbot import botcmd, re_botcmd, arg_botcmd, templating, plugin_manager  # noqa
 from errbot.main import CORE_STORAGE
 from errbot.plugin_manager import BotPluginManager
 from errbot.rendering import text
@@ -126,6 +126,16 @@ class DummyBackend(ErrBot):
     def pop_message(self, timeout=3, block=True):
         return self.outgoing_message_queue.get(timeout=timeout, block=block)
 
+    @property
+    def mode(self):
+        return "Dummy"
+
+    @property
+    def rooms(self):
+        return []
+
+class DummyPlugin(plugin_manager.BotPluginManager):
+
     @botcmd
     def command(self, mess, args):
         return "Regular command"
@@ -223,14 +233,6 @@ class DummyBackend(ErrBot):
         # str * int gives a repeated string
         return value * count
 
-    @property
-    def mode(self):
-        return "Dummy"
-
-    @property
-    def rooms(self):
-        return []
-
 
 @pytest.fixture
 def dummy_backend():
@@ -260,11 +262,13 @@ def dummy_execute_and_send():
     example_message.frm = dummy.build_identifier('noterr')
     example_message.to = dummy.build_identifier('err')
 
+# TODO: these need to be done for the plugin, not backend
     assets_path = os.path.join(os.path.dirname(__file__), 'assets')
-    templating.template_path.append(templating.make_templates_path(assets_path))
-    templating.env = templating.Environment(loader=templating.FileSystemLoader(templating.template_path))
+    # duplicates_path = os.path.join(assets_path, 'duplicate_template')
+    # dummy.tenv = templating.add_plugin_templates_path(assets_path)
     return dummy, example_message
 
+# TODO: teardown: templating.remove_plugin_templates_path(assets_path)
 
 def test_commands_can_return_string(dummy_execute_and_send):
     dummy, m = dummy_execute_and_send
